@@ -994,7 +994,7 @@ def helmTestHandler(scmVars) {
       for (chart in pipeline.deployments) {
         if (chart.chart) {
           def commandString = """
-          helm test --tiller-namespace ${pipeline.helm.namespace} --timeout ${chart.timeout} ${chart.release}-${kubeName(env.JOB_NAME)} --debug
+          helm test --tiller-namespace ${pipeline.helm.namespace} --timeout ${chart.timeout} ${chart.release}-${kubeName(env.JOB_NAME)} --debug --cleanup
           """ 
 
           retry(chart.retries) {
