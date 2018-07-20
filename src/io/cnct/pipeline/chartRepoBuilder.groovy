@@ -477,7 +477,7 @@ def buildsTestHandler(scmVars) {
           jobName.toString(), 
           imageUrl.toString(), 
           maxCve.toInteger(), 
-          maxLevel.toInteger(), 
+          maxLevel.toString(), 
           clairService.toString())
 
         toYamlFile(klarJobTemplate, "${pwd()}/klar-job.yaml")
