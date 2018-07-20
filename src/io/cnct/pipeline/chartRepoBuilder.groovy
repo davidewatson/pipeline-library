@@ -81,8 +81,6 @@ def postCleanup(err) {
           sh("kubectl delete pvc jenkins-varlibdocker-${kubeName(env.JOB_NAME)} --namespace ${defaults.jenkinsNamespace} || true")
           // always cleanup storageclass
           sh("kubectl delete storageclass jenkins-storageclass-${kubeName(env.JOB_NAME)} || true")
-          // clean up klar job
-          sh("kubectl delete job klar-${kubeName(env.JOB_NAME)} --namespace ${defaults.jenkinsNamespace} || true")
           // always clean up pull secrets
           def deletePullSteps = [:]
           for (pull in pipeline.pullSecrets ) {
@@ -104,6 +102,18 @@ def postCleanup(err) {
               sh("helm list --namespace ${kubeName(env.JOB_NAME)} --short --failed --tiller-namespace ${pipeline.helm.namespace} | while read line; do helm delete \$line --purge --tiller-namespace ${pipeline.helm.namespace}; done")
               sh("helm list --namespace ${pipeline.stage.namespace} --short --failed --tiller-namespace ${pipeline.helm.namespace} | while read line; do helm delete \$line --purge --tiller-namespace ${pipeline.helm.namespace}; done")
             }
+
+            // clean up klar jobs
+            def parallelCveSteps = [:]
+            for (container in pipeline.builds) {
+              if (container.script || container.commands) {
+                continue
+              }
+
+              def cveJobName = kubeName(helmReleaseName("klar-${env.JOB_NAME}-${container.image}"))
+              parallelCveSteps[cveJobName] = { sh("kubectl delete job ${cveJobName} --namespace ${defaults.jenkinsNamespace} || true") }
+            }
+            parallel parallelCveSteps
 
             // additional cleanup on error that destroy handler might have missed
             if (err) {
