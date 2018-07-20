@@ -536,7 +536,6 @@ def buildsTestHandler(scmVars) {
       parallel parallelContainerBuildSteps
       parallel parallelTagSteps
       parallel parallelPushSteps
-      parallel parallelCveSteps
 
       // process values yamls for modified charts
       // modify the appropriate image objects under values yaml to point to the newly tagged image
@@ -552,6 +551,12 @@ def buildsTestHandler(scmVars) {
           includes: "${chartLocation(defaults, chart.chart)}/values.yaml"
         )
       }
+    }
+  }
+
+  container('helm') {
+    stage('Running cve scans') {
+      parallel parallelCveSteps
     }
   }
 }
