@@ -462,7 +462,6 @@ def buildsTestHandler(scmVars) {
     }
 
     stage('Collect cve scan targets') {
-      def imageUrl = ""
       def clairService = "clairsvc:6060"
       def maxCve = pipeline.cveScan.maxCve
       def maxLevel = pipeline.cveScan.maxLevel
@@ -470,11 +469,15 @@ def buildsTestHandler(scmVars) {
 
       for (container in pipeline.builds) {
         
-        def jobName = "klar-${kubeName(env.JOB_NAME)}-${kubeName(container.image)}"
-        
+        if(!container.image) {
+          continue
+        }
+
+        def jobName = kubeName(helmReleaseName("klar-${env.JOB_NAME}-${container.image}"))
+        def imageUrl = "${defaults.docker.registry}/${container.image}:${useTag}"
 
         parallelCveSteps[jobName] = {
-          imageUrl = "${defaults.docker.registry}/${container.image}:${useTag}"
+          
           stage("Scan image ${imageUrl} for vulnerabilities") {
 
             def klarJobTemplate = createKlarJob(
