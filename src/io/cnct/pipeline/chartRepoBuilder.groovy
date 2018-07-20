@@ -385,6 +385,7 @@ def buildsTestHandler(scmVars) {
   def parallelContainerBuildSteps = [:]
   def parallelTagSteps = [:]
   def parallelPushSteps = [:]
+  def parallelCveSteps = [:]
 
   executeUserScript('Executing test \'before\' script', pipeline.test.beforeScript)
 
@@ -459,54 +460,59 @@ def buildsTestHandler(scmVars) {
         }
       }
     }
-  }
 
-  container('helm') {
-    stage('Scan image for vulnerabilities') {
+    stage('Collect cve scan targets') {
       def imageUrl = ""
-      def jobName = "klar-${kubeName(env.JOB_NAME)}"
       def clairService = "clairsvc:6060"
       def maxCve = pipeline.cveScan.maxCve
       def maxLevel = pipeline.cveScan.maxLevel
       def ignoreCVE = pipeline.cveScan.ignore
 
       for (container in pipeline.builds) {
-        imageUrl = "${defaults.docker.registry}/${container.image}:${useTag}"
+        
+        def jobName = "klar-${kubeName(env.JOB_NAME)}-${kubeName(container.image)}"
+        
 
-        def klarJobTemplate = createKlarJob(
-          jobName.toString(), 
-          imageUrl.toString(), 
-          maxCve.toInteger(), 
-          maxLevel.toString(), 
-          clairService.toString())
+        parallelCveSteps[jobName] = {
+          imageUrl = "${defaults.docker.registry}/${container.image}:${useTag}"
+          stage("Scan image ${imageUrl} for vulnerabilities") {
 
-        toYamlFile(klarJobTemplate, "${pwd()}/klar-job.yaml")
-        sh("kubectl create -f ${pwd()}/klar-job.yaml --namespace ${defaults.jenkinsNamespace}")
+            def klarJobTemplate = createKlarJob(
+              jobName.toString(), 
+              imageUrl.toString(), 
+              maxCve.toString(), 
+              maxLevel.toString(), 
+              clairService.toString())
 
-        // create klar job
-        def klarPod = sh returnStdout: true, script: "kubectl get pods --selector=job-name=${jobName} --output=jsonpath={.items..metadata.name} --namespace ${defaults.jenkinsNamespace}"
+            toYamlFile(klarJobTemplate, "${pwd()}/klar-job.yaml")
+            sh("kubectl create -f ${pwd()}/klar-job.yaml --namespace ${defaults.jenkinsNamespace}")
 
-        def klarJobStatus = sh returnStdout: true, script: "kubectl get po ${klarPod} --output=jsonpath={.status.phase} --namespace ${defaults.jenkinsNamespace}"
+            // create klar job
+            def klarPod = sh returnStdout: true, script: "kubectl get pods --selector=job-name=${jobName} --output=jsonpath={.items..metadata.name} --namespace ${defaults.jenkinsNamespace}"
 
-        // wait for klar to finish scanning docker image
-        while(klarJobStatus == "Running") { 
-          klarJobStatus = sh returnStdout: true, script: "kubectl get po ${klarPod} --output=jsonpath={.status.phase} --namespace ${defaults.jenkinsNamespace}"
-          continue
+            def klarJobStatus = sh returnStdout: true, script: "kubectl get po ${klarPod} --output=jsonpath={.status.phase} --namespace ${defaults.jenkinsNamespace}"
+
+            // wait for klar to finish scanning docker image
+            while(klarJobStatus == "Running") { 
+              klarJobStatus = sh returnStdout: true, script: "kubectl get po ${klarPod} --output=jsonpath={.status.phase} --namespace ${defaults.jenkinsNamespace}"
+              continue
+            }
+
+            // get CVE report and print to console
+            def klarResult = sh returnStdout: true, script: "kubectl logs ${klarPod} --namespace ${defaults.jenkinsNamespace}"
+            echo(klarResult)
+
+            def klarExitCode = sh returnStdout: true, script: "kubectl get pod ${klarPod} -o go-template='{{range .status.containerStatuses}}{{.state.terminated.exitCode}}{{end}}' --namespace ${defaults.jenkinsNamespace}"
+
+            // fail build if max vulnerabilities found
+            if ((!ignoreCVE) && (klarExitCode != "0")) {
+              error("Docker image exceeds maximum vulnerabilities, check Klar CVE report for more information. The CVE report will include a link to the CVE and information on what version includes a fix")
+              break
+            }
+
+            sh("kubectl delete job ${jobName} --namespace ${defaults.jenkinsNamespace}")
+          }
         }
-
-        // get CVE report and print to console
-        def klarResult = sh returnStdout: true, script: "kubectl logs ${klarPod} --namespace ${defaults.jenkinsNamespace}"
-        echo(klarResult)
-
-        def klarExitCode = sh returnStdout: true, script: "kubectl get pod ${klarPod} -o go-template='{{range .status.containerStatuses}}{{.state.terminated.exitCode}}{{end}}' --namespace ${defaults.jenkinsNamespace}"
-
-        // fail build if max vulnerabilities found
-        if ((!ignoreCVE) && (klarExitCode != "0")) {
-          error("Docker image exceeds maximum vulnerabilities, check Klar CVE report for more information. The CVE report will include a link to the CVE and information on what version includes a fix")
-          break
-        }
-
-        sh("kubectl delete job ${jobName} --namespace ${defaults.jenkinsNamespace}")
       }
     }
   }
@@ -530,6 +536,7 @@ def buildsTestHandler(scmVars) {
       parallel parallelContainerBuildSteps
       parallel parallelTagSteps
       parallel parallelPushSteps
+      parallel parallelCveSteps
 
       // process values yamls for modified charts
       // modify the appropriate image objects under values yaml to point to the newly tagged image
