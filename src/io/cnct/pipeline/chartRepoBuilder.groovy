@@ -473,7 +473,12 @@ def buildsTestHandler(scmVars) {
       for (container in pipeline.builds) {
         imageUrl = "${defaults.docker.registry}/${container.image}:${useTag}"
 
-        def klarJobTemplate = createKlarJob(jobName, imageUrl, maxCve, maxLevel, clairService)
+        def klarJobTemplate = createKlarJob(
+          jobName.toString(), 
+          imageUrl.toString(), 
+          maxCve.toInteger(), 
+          maxLevel.toInteger(), 
+          clairService.toString())
 
         toYamlFile(klarJobTemplate, "${pwd()}/klar-job.yaml")
         sh("kubectl create -f ${pwd()}/klar-job.yaml --namespace ${defaults.jenkinsNamespace}")
