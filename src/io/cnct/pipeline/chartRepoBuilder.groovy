@@ -469,7 +469,7 @@ def buildsTestHandler(scmVars) {
 
       for (container in pipeline.builds) {
         
-        if (container.script || container.commands)
+        if (container.script || container.commands) {
           continue
         }
 
