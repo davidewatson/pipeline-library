@@ -469,26 +469,20 @@ def buildsTestHandler(scmVars) {
 
       for (container in pipeline.builds) {
         
-        if(!container.image) {
+        if (container.script || container.commands)
           continue
         }
 
         def jobName = kubeName(helmReleaseName("klar-${env.JOB_NAME}-${container.image}"))
         def imageUrl = "${defaults.docker.registry}/${container.image}:${useTag}"
+        def klarJobTemplate = createKlarJob(jobName.toString(), imageUrl.toString(), maxCve.toString(), maxLevel.toString(), clairService.toString())
 
         parallelCveSteps[jobName] = {
           
           stage("Scan image ${imageUrl} for vulnerabilities") {
 
-            def klarJobTemplate = createKlarJob(
-              jobName.toString(), 
-              imageUrl.toString(), 
-              maxCve.toString(), 
-              maxLevel.toString(), 
-              clairService.toString())
-
-            toYamlFile(klarJobTemplate, "${pwd()}/klar-job.yaml")
-            sh("kubectl create -f ${pwd()}/klar-job.yaml --namespace ${defaults.jenkinsNamespace}")
+            toYamlFile(klarJobTemplate, "${pwd()}/${jobName}.yaml")
+            sh("kubectl create -f ${pwd()}/${jobName}.yaml --namespace ${defaults.jenkinsNamespace}")
 
             // create klar job
             def klarPod = sh returnStdout: true, script: "kubectl get pods --selector=job-name=${jobName} --output=jsonpath={.items..metadata.name} --namespace ${defaults.jenkinsNamespace}"
