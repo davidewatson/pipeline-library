@@ -150,7 +150,7 @@ replicas: 1
 service:
   name: my-service
 images:
-  myMainImage: quay.io/samsung_cnct/MY-CHART-IMAGE:prod
+  myMainImage: quay.io/samsung_cnct/MY-CHART-IMAGE:0.0.5
 ```
 
 ## Edit pipeline.yaml 
@@ -397,6 +397,10 @@ Setting | Description
 `cveScan.maxCve` | Number of vulnerabilities allowed to be present in container
 `cveScan.maxLevel` | Level [Unknown Negligible Low Medium High Critical Defcon1] of `cveScan.maxCve`
 `cveScan.ignore` | True to pass CI even if `cveScan.maxCve` surpassed, False to to CI if `cveScan.maxCve` surpassed
+`ciSkip` | Arbitrary string for commits of version bump updates to github by Jenkins
+`github.credentials` | ID of jenkins username/password credentials with github push access
+`github.pushUser` | Arbitrary name of git user for `git config`
+`github.pushEmail`| Arbitrary email of user for `git config`
 Example:
 
 ```
@@ -419,6 +423,11 @@ images:
   helm: quay.io/maratoid/helm:latest
   vault: quay.io/maratoid/vault:latest
   script: quay.io/maratoid/script:latest
+ciSkip: "JENKINSCISKIP"
+github:
+  credentials: github-access
+  pushUser: jenkins
+  pushEmail: jenkins@cnct.io
 vault:
   server: http://vault-access.pipeline-tools.svc.cluster.local
   credentials: vault-plugin
