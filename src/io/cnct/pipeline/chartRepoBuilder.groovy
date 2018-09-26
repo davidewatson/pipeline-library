@@ -1099,6 +1099,10 @@ def pushGitChanges(scmVars) {
   
   container('helm') {
     stage('Applying and pushing git changes') {
+      
+      deleteDir()
+      checkout scm
+      
       for (chart in pipeline.deployments) {
         if (chart.chart) {
 
@@ -1126,7 +1130,7 @@ def pushGitChanges(scmVars) {
           git config --global user.name "${defaults.github.pushUser}"
           git add .
           git commit -m "${defaults.ciSkip}"
-          git push ${repoString} origin master
+          git push ${repoString}
           """
           
           sh(gitCommand)
