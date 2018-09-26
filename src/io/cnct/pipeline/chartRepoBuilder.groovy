@@ -1131,7 +1131,7 @@ def pushGitChanges(scmVars) {
           git config push.default simple
           git add .
           git commit -m "${defaults.ciSkip}"
-          git push ${repoString} origin HEAD:refs/heads/master
+          git push ${repoString} HEAD:refs/heads/master
           """
           
           sh(gitCommand)
