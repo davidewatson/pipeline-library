@@ -1128,9 +1128,10 @@ def pushGitChanges(scmVars) {
           def gitCommand = """
           git config --global user.email "${defaults.github.pushEmail}" 
           git config --global user.name "${defaults.github.pushUser}"
+          git config push.default simple
           git add .
           git commit -m "${defaults.ciSkip}"
-          git push ${repoString}
+          git push ${repoString} origin HEAD:refs/heads/master
           """
           
           sh(gitCommand)
