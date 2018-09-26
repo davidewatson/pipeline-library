@@ -18,6 +18,8 @@ targets:
   testCluster: secret/test-cluster/config
 github:
   credentials: github-access
+  pushUser: jenkins
+  pushEmail: jenkins@cnct.io
 slack:
   channel: #ping-github
   credentials: slack-access

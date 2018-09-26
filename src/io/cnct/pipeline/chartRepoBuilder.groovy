@@ -1120,10 +1120,16 @@ def pushGitChanges(scmVars) {
           passwordVariable: 'GIT_PASSWORD')]) {
           def scmUrl = scm.getUserRemoteConfigs()[0].getUrl()
           def repoString = buildGitRepoString(scmUrl, env.GIT_USERNAME, env.GIT_PASSWORD)
-
-          sh("git add .")
-          sh("git commit -m '${defaults.ciSkip}'")
-          sh("git push ${repoString} origin master")
+          
+          def gitCommand = """
+          git config --global user.email "${defaults.github.pushEmail}" 
+          git config --global user.name "${defaults.github.pushUser}"
+          git add .
+          git commit -m "${defaults.ciSkip}"
+          git push ${repoString} origin master
+          """
+          
+          sh(gitCommand)
       }
     }
   }

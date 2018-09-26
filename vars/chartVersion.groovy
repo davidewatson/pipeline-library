@@ -29,7 +29,7 @@ def call(Map defaultVals, String packageName, String preReleaseInfo, String sha)
 
     chartYaml.version = chartVersionComponents.join('+')
   } else {
-    chartYaml.version = "${versionFileComponents[0]}.${versionFileComponents[1]}.${Integer.toString(updatedBuild)}"
+    chartYaml.version = "${versionFileComponents[0]}.${versionFileComponents[1]}.${Integer.toString(updatedBuild)}".toString()
   }
 
   toYamlFile(chartYaml, "${pwd()}/${chartLocation(defaultVals, packageName)}/Chart.yaml")
