@@ -5,6 +5,7 @@ def executePipeline(pipelineDef) {
   // script globals initialized in initializeHandler
   isChartChange = false
   isMasterBuild = false
+  isSelfCommit = false
   isPRBuild = false
   isSelfTest = false
   pipeline = pipelineDef
@@ -39,11 +40,18 @@ def executePipeline(pipelineDef) {
 
     notifyMessage = 'Build succeeded for ' + "${env.JOB_NAME} number ${env.BUILD_NUMBER} (${env.RUN_DISPLAY_URL})"
   } catch (e) {
-    currentBuild.result = 'FAILURE'
-    notifyMessage = 'Build failed for ' + 
-      "${env.JOB_NAME} number ${env.BUILD_NUMBER} (${env.RUN_DISPLAY_URL}) : ${e.getMessage()}"
-    err = e
+    if (!isSelfCommit) {
+      currentBuild.result = 'FAILURE'
+      notifyMessage = 'Build failed for ' + 
+        "${env.JOB_NAME} number ${env.BUILD_NUMBER} (${env.RUN_DISPLAY_URL}) : ${e.getMessage()}"
+      err = e
+    }
   } finally {
+    
+    if (isSelfCommit) {
+      currentBuild.result = 'SUCCESS'
+      return
+    }
 
     postCleanup(err)
     
@@ -181,8 +189,8 @@ def initializeHandler() {
         
         stage('Make sure this is not a self-version bump') {
           if (ciSkip(defaults)) {
-            echo 'Skipping self-commit'
-            return 
+            isSelfCommit = true
+            error('Skipping self-commit') 
           }
         }
 
