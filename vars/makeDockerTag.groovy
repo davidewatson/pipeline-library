@@ -8,7 +8,7 @@ def call(Map defaultVals, String sha) {
 
   def updatedBuild = verComponents[2].toInteger() + 1 
 
-  if (sh == "") {
+  if (sha == "") {
     return "${verComponents[0]}.${verComponents[1]}.${toString(updatedBuild)}"
   } else {
     return "${verComponents[0]}.${verComponents[1]}.${toString(updatedBuild)}-${sha}"
