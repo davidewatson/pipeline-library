@@ -7,5 +7,5 @@ def call(Map defaultVals) {
   }
 
   def updatedBuild = verComponents[2].toInteger() + 1 
-  writeFile(file: "${pwd()}/${defaultVals.versionfile}", text: "${verComponents[0]}.${verComponents[1]}.${toString(updatedBuild)}")
+  writeFile(file: "${pwd()}/${defaultVals.versionfile}", text: "${verComponents[0]}.${verComponents[1]}.${Integer.toString(updatedBuild)}")
 }
