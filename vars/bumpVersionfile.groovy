@@ -1,4 +1,4 @@
-def call(Map defaultVals, String sha) {
+def call(Map defaultVals) {
   def versionFileContents = readFile(defaultVals.versionfile).trim()
   def verComponents = versionFileContents.split('\\.')
 
@@ -7,10 +7,5 @@ def call(Map defaultVals, String sha) {
   }
 
   def updatedBuild = verComponents[2].toInteger() + 1 
-
-  if (sh == "") {
-    return "${verComponents[0]}.${verComponents[1]}.${toString(updatedBuild)}"
-  } else {
-    return "${verComponents[0]}.${verComponents[1]}.${toString(updatedBuild)}-${sha}"
-  }
+  writeFile(file: "${pwd()}/${defaultVals.versionfile}", text: "${verComponents[0]}.${verComponents[1]}.${toString(updatedBuild)}")
 }
