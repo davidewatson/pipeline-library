@@ -19,13 +19,6 @@ def executePipeline(pipelineDef) {
     ]
   )
 
-  stage('Make sure this is not a self-version bump') {
-    if (ciSkip(defaults)) {
-      echo 'Skipping self-commit'
-      return 
-    }
-  }
-
   def err = null
   def notifyMessage = ""
 
@@ -185,6 +178,14 @@ def initializeHandler() {
       
       scmVars = checkout scm
       container('helm') {
+        
+        stage('Make sure this is not a self-version bump') {
+          if (ciSkip(defaults)) {
+            echo 'Skipping self-commit'
+            return 
+          }
+        }
+
         stage('Create jenkins storage class') {
           echo('Loading jenkins storage class template')
           def storageClass = parseYaml(libraryResource("io/cnct/pipeline/jenkins-storage-class.yaml"))
