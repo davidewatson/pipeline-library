@@ -32,12 +32,12 @@ def call(Map defaultVals, String packageName, String preReleaseInfo, String sha)
     chartYaml.version = "${versionFileComponents[0]}.${versionFileComponents[1]}.${Integer.toString(updatedBuild)}"
   }
 
-  toYamlFile(chartYaml, "${pwd()}/${chartLocation(defaults, packageName)}/Chart.yaml")
+  toYamlFile(chartYaml, "${pwd()}/${chartLocation(defaultVals, packageName)}/Chart.yaml")
 
   // stash the Chart.yaml
   stash(
     name: "${packageName}-chartyaml-${env.BUILD_ID}".replaceAll('-','_'),
-    includes: "${chartLocation(defaults, packageName)}/Chart.yaml"
+    includes: "${chartLocation(defaultVals, packageName)}/Chart.yaml"
   )
 
   return chartYaml.version
