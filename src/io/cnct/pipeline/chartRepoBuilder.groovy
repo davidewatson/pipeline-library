@@ -554,7 +554,7 @@ def buildsTestHandler(scmVars) {
           credentialsId: defaults.docker.credentials, 
           usernameVariable: 'DOCKER_USER',
           passwordVariable: 'DOCKER_PASSWORD')]) {
-        sh('docker login --username $DOCKER_USER --password $DOCKER_PASSWORD ' + defaults.docker.registry)
+        sh('echo "$DOCKER_PASSWORD" | docker login --username $DOCKER_USER --password-stdin ' + defaults.docker.registry)
       }
 
       parallel parallelContainerBuildSteps
@@ -623,7 +623,7 @@ def buildsStageHandler(scmVars) {
           credentialsId: defaults.docker.credentials, 
           usernameVariable: 'DOCKER_USER',
           passwordVariable: 'DOCKER_PASSWORD')]) {
-        sh('docker login --username $DOCKER_USER --password $DOCKER_PASSWORD ' + defaults.docker.registry)
+        sh('echo "$DOCKER_PASSWORD" | docker login --username $DOCKER_USER --password-stdin ' + defaults.docker.registry)
       }
 
       parallel parallelTagSteps
@@ -751,7 +751,7 @@ def buildsProdHandler(scmVars) {
           credentialsId: defaults.docker.credentials, 
           usernameVariable: 'DOCKER_USER',
           passwordVariable: 'DOCKER_PASSWORD')]) {
-        sh('docker login --username $DOCKER_USER --password $DOCKER_PASSWORD ' + defaults.docker.registry)
+        sh('echo "$DOCKER_PASSWORD" | docker login --username $DOCKER_USER --password-stdin ' + defaults.docker.registry)
       }
 
       parallel parallelBuildSteps
