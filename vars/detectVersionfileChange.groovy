@@ -24,7 +24,7 @@ def isVersionFileChanged(thisBuild, defaults) {
 @NonCPS
 def getString(thisBuild, defaults) {
   def changeLogSets = thisBuild.changeSets
-  def changeString += ""
+  def changeString = ""
   
   for (changeLogSet in changeLogSets) {
     for (entry in changeLogSet.items) {      
