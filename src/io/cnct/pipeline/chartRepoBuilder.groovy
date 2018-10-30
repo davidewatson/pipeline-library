@@ -792,36 +792,12 @@ def buildsProdHandler(scmVars) {
 // under /charts folder
 def chartLintHandler(scmVars) { 
   def parallelLintSteps = [:]   
-  def versionFileContents = readFile(defaults.versionfile).trim() 
 
   // read in all appropriate versionfiles and replace Chart.yaml versions 
   // this will verify that version files had helm-valid version numbers during linting step
   for (chart in pipeline.deployments) { 
     if (chart.chart) {
-      // load chart yaml
-      def chartYaml = parseYaml(readFile("${pwd()}/${chartLocation(defaults, chart.chart)}/Chart.yaml"))
-
-      // build new chart version
-      def verComponents = []
-      verComponents.addAll(chartYaml.version.toString().split('\\+'))
-
-      if (verComponents.size() > 1) {
-        verComponents[1] = scmVars.GIT_COMMIT
-      } else {
-        verComponents << scmVars.GIT_COMMIT
-      }
-
-      verComponents[0] = versionFileContents + "-test.${env.BUILD_NUMBER}"
-      
-      chartYaml.version = verComponents.join('+')
-
-      toYamlFile(chartYaml, "${pwd()}/${chartLocation(defaults, chart.chart)}/Chart.yaml")
-
-      // stash the Chart.yaml
-      stash(
-        name: "${chart.chart}-chartyaml-${env.BUILD_ID}".replaceAll('-','_'),
-        includes: "${chartLocation(defaults, chart.chart)}/Chart.yaml"
-      )
+      chartVersion(defaults, chart.chart, "test.${env.BUILD_NUMBER}", scmVars.GIT_COMMIT)
 
       // grab current config object that is applicable to test section from all deployments
       def commandString = "helm lint ${chartLocation(defaults, chart.chart)}"
