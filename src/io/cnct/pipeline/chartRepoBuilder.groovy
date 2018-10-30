@@ -1135,7 +1135,7 @@ def pushGitChanges(scmVars) {
       }
 
       // update the versionfile
-      if (detectVersionfileChange(defaults)) {
+      if (!detectVersionfileChange(defaults)) {
         bumpVersionfile(defaults)
       }
 
