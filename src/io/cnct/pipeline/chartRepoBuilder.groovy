@@ -978,7 +978,7 @@ def deployToStageHandler(scmVars) {
 // deploy chart from repository into prod namespace, 
 // conditional on doDeploy
 def deployToProdHandler(scmVars) { 
-  def versionfileChanged = detectVersionfileChange(defaults)
+  def versionfileChanged = isPathChange(defaults.versionfile, "${env.CHANGE_ID}")
 
   container('helm') {
     def deploySteps = [:]
@@ -1111,7 +1111,7 @@ def pushGitChanges(scmVars) {
       }
 
       // update the versionfile
-      if (!detectVersionfileChange(defaults)) {
+      if (!isPathChange(defaults.versionfile, "${env.CHANGE_ID}")) {
         bumpVersionfile(defaults)
       }
 
