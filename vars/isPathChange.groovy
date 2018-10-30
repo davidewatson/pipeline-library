@@ -23,5 +23,5 @@ exit \$?"""
     script: scriptVal
   )
 
-  return pathChanged
+  return (pathChanged == 0)
 }

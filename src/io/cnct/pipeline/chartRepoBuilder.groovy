@@ -978,8 +978,6 @@ def deployToStageHandler(scmVars) {
 // deploy chart from repository into prod namespace, 
 // conditional on doDeploy
 def deployToProdHandler(scmVars) { 
-  def versionfileChanged = isPathChange(defaults.versionfile, "${env.CHANGE_ID}")
-
   container('helm') {
     def deploySteps = [:]
     stage('Deploying to prod namespace') {
@@ -1003,7 +1001,7 @@ def deployToProdHandler(scmVars) {
           if (pipeline.prod.doDeploy == 'auto') {
             doDeploy = true
           } else if (pipeline.prod.doDeploy == 'versionfile') {
-            if (versionfileChanged == 0) {
+            if (isPathChange(defaults.versionfile, "${env.CHANGE_ID}")) {
               doDeploy = true
             }
           }
