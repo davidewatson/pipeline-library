@@ -891,7 +891,7 @@ def deployToTestHandler(scmVars) {
 
           // deploy chart to the correct namespace
           def commandString = """
-            set +x
+            #set +x
             helm init --client-only
             helm repo add pipeline https://${defaults.helm.registry}"""
 
