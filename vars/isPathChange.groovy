@@ -1,7 +1,7 @@
 #!/usr/bin/groovy
 def call(String path, String changeId = "null") { 
   def scriptVal = """
-if git show-ref HEAD; then
+if git show-ref HEAD --head; then
   git --no-pager diff --name-only HEAD HEAD^ | grep '${path}'
   exit \$?
 else
