@@ -164,7 +164,7 @@ rootfs:                                   # image building configuration
    context: MY-CHART-IMAGE                # folder name under rootfs (or build) folder
    dockerContext: .                       # docker build context, relative to root of github repository
    chart: MY-CHART-NAME                   # name of the chart in Chart.yaml
-   value: images.myMainImage              # yaml path to docker image value in values.yaml of MY-CHART-NAME chart
+   tagValue: images.myMainImageTag        # Optional yaml path to docker image tag in values.yaml of MY-CHART-NAME chart
 configs:                                  # chart building configuration
  - chart: MY-CHART-NAME                   # name of the chart in Chart.yaml
    timeout: 600                           # timeout values for things like running Helm tests
@@ -238,31 +238,6 @@ Add the jenkins job badge to your repo README.md:
 * Move the `Dockerfile` and whatever otherfiles the docker build context will need from `github.com/samsung-cnct/your-project-container` to `rootfs/your-docker-image-name/` or `build/your-docker-image-name/`
 * Create `.versionfile` in the root of your repository. Put a real base version number in the file in `Major.Minor.Build` format.
 * Make sure chart templates don't use `.Chart.Version` directly (see [Problems with chart labels](#problems-with-chart-labels))
-* Change `values.yaml` and chart if needed:
-
-Whatever values.yaml structure you have picked for your chart, there is only one requirement - the docker image and docker image tag need to be a single value. I.e., lets say you have the following section in your chart's `values.yaml`
-
-```
-service: mychart
-images:
-  myimage: quay.io/samsung-cnct/my-image
-  mytag: 1.1.1
-  pullPolicy: Always
-config:
-  other: value
-```
-
-You will have to change your chart to work with:
-
-```
-service: mychart
-images:
-  myimage: quay.io/samsung-cnct/my-image:1.1.1
-  pullPolicy: Always
-config:
-  other: value
-```
-
 * Create `pipeline.yaml` file in the root of your repository. 
 * Fill out `pipeline.yaml`
 
@@ -274,7 +249,8 @@ builds:                                 # 'rootfs' is equivalent to 'builds'
   - image: samsung-cnct/my-image        # docker image name. DO NOT include the registry name (quay.io part)
     context: your-docker-image-name     # folder containing the Dockerfile under ./rootfs
     chart: your-chart-name              # folder containing the chart files under ./charts
-    value: images.myimage               # YAML path to the value referring to docker image name in your-chart-name values.yaml
+    value: images.myimage               # EITHER: YAML path to the value referring to docker image name in your-chart-name values.yaml, with complete with tag
+    tagValue: images.mytag              # OR: YAML path to the value referring to docker image tag only in your-chart-name values.yaml
 deployments:                            # 'configs' is equivalent to 'deployments'
   - chart: your-chart-name              # folder containing the chart files under ./charts 
     release: your-helm-release-name     # name of the helm release for your-chart-name
@@ -626,8 +602,8 @@ Setting | Description
 `rootfs` | Array of rootfs objects
 `builds` | Equivalent to `rootfs`
 `rootfs.[].image` | image to build, without the `:tag`, or image to use for building a binary
-`rootfs.[].script` |  Path to script to run in `rootfs.[].image` relative to current workspace. Mutually exclusive with `buildArgs`, `context`, `dockerContext`, `chart` and `value`
-`rootfs.[].commands` | commands to run in `rootfs.[].image` (multi line string). Mutually exclusive with `buildArgs`, `context`, `dockerContext`, `chart` and `value` 
+`rootfs.[].script` |  Path to script to run in `rootfs.[].image` relative to current workspace. Mutually exclusive with `buildArgs`, `context`, `dockerContext`, `chart`, `value` and `tagValue`
+`rootfs.[].commands` | commands to run in `rootfs.[].image` (multi line string). Mutually exclusive with `buildArgs`, `context`, `dockerContext`, `chart`, `value`  and `tagValue`
 `rootfs.[].buildArgs` | Array of build arg objects for the image
 `rootfs.[].buildArgs.[].arg` | arg name
 `rootfs.[].buildArgs.[].value` | arg value
@@ -636,7 +612,8 @@ Setting | Description
 `rootfs.[].context` | Path, relative to `current workspace/rootfs`, to which rootfs contains the docker file for this image. I.e. specifying `myimage` will look for `Dockerfile` under `/jenkins/workspace/rootfs/myimage`
 `rootfs.[].dockerContext` | Path relative to current `current workspace` that will serve as docker build context. I.e. specifying `.` will result in `docker build . -f /jenkins/workspace/rootfs/rootfs.[].context/Dockerfile`
 `rootfs.[].chart` | Name of the chart using this image, under `charts`
-`rootfs.[].value` | Dot-path to value under the chart's values.yaml that sets this image for the chart. I.e. `section.image.myawesomecontainer`
+`rootfs.[].value` | Dot-path to value under the chart's values.yaml that sets this image with tag for the chart. I.e. `section.image.myawesomecontainer`. Mutually exclusive with `tagValue`
+`rootfs.[].tagValue` | Dot-path to tag value under the chart's values.yaml that sets this image tag only for the chart. I.e. `section.image.myTag`. Mutually exclusive with `value`
 `rootfs.[].locationOverride` | Per-image override for default dockerfile locations in [defaults.packages](#shared-workflow-library-defaults), relative to repository root. I.e. specifying `cmd` will result in `docker build . -f /jenkins/workspace/rootfs.[].locationOverride/rootfs.[].context/Dockerfile`
 
 #### configs / deployments
@@ -775,7 +752,7 @@ builds:
     context: pipeline-demo
     dockerContext: .
     chart: pipeline-demo
-    value: images.image
+    tagValue: images.imageTag
 deployments:
   - chart: pipeline-demo
     timeout: 600

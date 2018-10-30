@@ -567,7 +567,11 @@ def buildsTestHandler(scmVars) {
       for (chart in chartsWithContainers) { 
         def valuesYaml = parseYaml(readFile("${pwd()}/${chartLocation(defaults, chart.chart)}/values.yaml"))
 
-        mapValueByPath(chart.value, valuesYaml, "${defaults.docker.registry}/${chart.image}:${useTag}")
+        if (chart.tagValue) {
+          mapValueByPath(chart.tagValue, valuesYaml, "${useTag}")
+        } else {
+          mapValueByPath(chart.value, valuesYaml, "${defaults.docker.registry}/${chart.image}:${useTag}")
+        }
         toYamlFile(valuesYaml, "${pwd()}/${chartLocation(defaults, chart.chart)}/values.yaml")
 
         stash(
@@ -635,7 +639,11 @@ def buildsStageHandler(scmVars) {
       for (chart in chartsWithContainers) {
         def valuesYaml = parseYaml(readFile("${pwd()}/${chartLocation(defaults, chart.chart)}/values.yaml"))
 
-        mapValueByPath(chart.value, valuesYaml, "${defaults.docker.registry}/${chart.image}:${useTag}")
+        if (chart.tagValue) {
+          mapValueByPath(chart.tagValue, valuesYaml, "${useTag}")
+        } else {
+          mapValueByPath(chart.value, valuesYaml, "${defaults.docker.registry}/${chart.image}:${useTag}")
+        }
         toYamlFile(valuesYaml, "${pwd()}/${chartLocation(defaults, chart.chart)}/values.yaml")
 
         stash(
@@ -764,7 +772,11 @@ def buildsProdHandler(scmVars) {
       for (chart in chartsWithContainers) {
         def valuesYaml = parseYaml(readFile("${pwd()}/${chartLocation(defaults, chart.chart)}/values.yaml"))
 
-        mapValueByPath(chart.value, valuesYaml, "${defaults.docker.registry}/${chart.image}:${useTag}")
+        if (chart.tagValue) {
+          mapValueByPath(chart.tagValue, valuesYaml, "${useTag}")
+        } else {
+          mapValueByPath(chart.value, valuesYaml, "${defaults.docker.registry}/${chart.image}:${useTag}")
+        }
         toYamlFile(valuesYaml, "${pwd()}/${chartLocation(defaults, chart.chart)}/values.yaml")
 
         stash(
