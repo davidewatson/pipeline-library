@@ -1,5 +1,4 @@
 def call(Map defaultVals) {
-  echo getString(currentBuild, defaultVals)
   return isVersionFileChanged(currentBuild, defaultVals)
 }
 
@@ -19,21 +18,4 @@ def isVersionFileChanged(thisBuild, defaults) {
   }
 
   return false
-}
-
-@NonCPS
-def getString(thisBuild, defaults) {
-  def changeLogSets = thisBuild.changeSets
-  def changeString = ""
-  
-  for (changeLogSet in changeLogSets) {
-    for (entry in changeLogSet.items) {      
-      def files = new ArrayList(entry.affectedFiles)
-      for (changedFile in files) {
-        changeString += "${entry.getMsg()}: ${changedFile.path}\n"
-      }
-    }
-  }
-
-  return changeString
 }
