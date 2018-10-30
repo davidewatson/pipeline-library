@@ -11,10 +11,15 @@ retries: 1
 timeout: 600
 versionfile: .versionfile
 shell: sh
+ciSkip: "JENKINSCISKIP"
 targets: 
   prodCluster: secret/prod-cluster/config
   stagingCluster: secret/staging-cluster/config
   testCluster: secret/test-cluster/config
+github:
+  credentials: github-access
+  pushUser: jenkins
+  pushEmail: jenkins@cnct.io
 slack:
   channel: #ping-github
   credentials: slack-access
@@ -22,9 +27,9 @@ slack:
 images: 
   dind: docker:stable-dind
   docker: docker:stable
-  helm: quay.io/maratoid/helm:latest
-  vault: quay.io/maratoid/vault:latest
-  script: quay.io/maratoid/script:latest
+  helm: quay.io/samsung_cnct/pipeline-library-helm:latest
+  vault: quay.io/samsung_cnct/pipeline-library-vault:latest
+  script: quay.io/samsung_cnct/pipeline-library-script:latest
 vault:
   server: http://vault-access.pipeline-tools.svc.cluster.local
   credentials: vault-plugin

@@ -155,6 +155,14 @@ def setDefaults(rawSettings, defaults) {
           error("Can't have build entries with 'script or 'command' AND 'buildArgs'")
         }
 
+        if (entry.value) {
+          error("Can't have build entries with 'script or 'command' AND 'value'")
+        }
+
+        if (entry.tagValue) {
+          error("Can't have build entries with 'script or 'command' AND 'tagValue'")
+        }
+
         entry.shell = entry.shell ? entry.shell : defaults.shell
       } else {
         if (!entry.context) {
@@ -167,6 +175,10 @@ def setDefaults(rawSettings, defaults) {
 
         if (!entry.image) {
           error("builds items must have 'image' field")
+        }
+
+        if (entry.value && entry.tagValue) {
+          error("Can't have builds items with both 'value' AND 'tagValue'")
         }
 
         if (!entry.buildArgs) {
@@ -207,6 +219,14 @@ def setDefaults(rawSettings, defaults) {
           error("Can't have rootfs entries with 'script or 'command' AND 'buildArgs'")
         }
 
+        if (entry.value) {
+          error("Can't have rootfs entries with 'script or 'command' AND 'value'")
+        }
+
+        if (entry.tagValue) {
+          error("Can't have rootfs entries with 'script or 'command' AND 'tagValue'")
+        }
+
         entry.shell = entry.shell ? entry.shell : defaults.shell
       } else {
         if (!entry.context) {
@@ -219,6 +239,10 @@ def setDefaults(rawSettings, defaults) {
 
         if (!entry.image) {
           error("rootfs items must have 'image' field")
+        }
+
+        if (entry.value && entry.tagValue) {
+          error("Can't have builds items with both 'value' AND 'tagValue'")
         }
 
         if (!entry.buildArgs) {
