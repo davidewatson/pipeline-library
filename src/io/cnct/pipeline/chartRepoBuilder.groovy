@@ -1135,7 +1135,9 @@ def pushGitChanges(scmVars) {
       }
 
       // update the versionfile
-      bumpVersionfile(defaults)
+      if (detectVersionfileChange(defaults)) {
+        bumpVersionfile(defaults)
+      }
 
       withCredentials(
         [usernamePassword(
@@ -1150,7 +1152,7 @@ def pushGitChanges(scmVars) {
           git config --global user.name "${defaults.github.pushUser}"
           git config push.default simple
           git add .
-          git commit -m "${defaults.ciSkip}"
+          git commit --allow-empty -m "${defaults.ciSkip}"
           git push ${repoString} HEAD:refs/heads/master
           """
           

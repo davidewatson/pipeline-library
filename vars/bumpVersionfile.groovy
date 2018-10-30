@@ -6,6 +6,6 @@ def call(Map defaultVals) {
     error "Invalid .versionfile contents: ${versionFileContents}"
   }
 
-  def updatedBuild = verComponents[2].toInteger() + 1 
+  def updatedBuild = detectVersionfileChange(defaultVals) ? verComponents[2].toInteger() + 1 : verComponents[2].toInteger()
   writeFile(file: "${pwd()}/${defaultVals.versionfile}", text: "${verComponents[0]}.${verComponents[1]}.${Integer.toString(updatedBuild)}")
 }

@@ -6,7 +6,7 @@ def call(Map defaultVals, String packageName, String preReleaseInfo, String sha)
     error "Invalid .versionfile contents: ${versionFileContents}"
   }
 
-  def updatedBuild = versionFileComponents[2].toInteger() + 1 
+  def updatedBuild = detectVersionfileChange(defaultVals) ? versionFileComponents[2].toInteger() + 1 : versionFileComponents[2].toInteger()
 
   // load chart yaml
   def chartYaml = parseYaml(readFile("${pwd()}/${chartLocation(defaultVals, packageName)}/Chart.yaml"))

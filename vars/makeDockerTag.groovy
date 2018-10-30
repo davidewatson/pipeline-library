@@ -6,7 +6,7 @@ def call(Map defaultVals, String sha) {
     error "Invalid .versionfile contents: ${versionFileContents}"
   }
 
-  def updatedBuild = verComponents[2].toInteger() + 1 
+  def updatedBuild = detectVersionfileChange(defaultVals) ? verComponents[2].toInteger() + 1 : verComponents[2].toInteger()
 
   if (sha == "") {
     return "${verComponents[0]}.${verComponents[1]}.${Integer.toString(updatedBuild)}"
