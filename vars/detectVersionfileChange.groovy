@@ -21,7 +21,6 @@ def isVersionFileChanged(thisBuild, defaults) {
   return false
 }
 
-@NonCPS
 def getString(thisBuild, defaults) {
   def changeLogSets = currentBuild.rawBuild.changeSets
   for (int i = 0; i < changeLogSets.size(); i++) {
