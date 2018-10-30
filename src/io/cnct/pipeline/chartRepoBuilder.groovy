@@ -1002,7 +1002,7 @@ def deployToStageHandler(scmVars) {
 // deploy chart from repository into prod namespace, 
 // conditional on doDeploy
 def deployToProdHandler(scmVars) { 
-  def versionfileChanged = isPathChange(defaults.versionfile, "${env.CHANGE_ID}")
+  def versionfileChanged = detectVersionfileChange(defaults)
 
   container('helm') {
     def deploySteps = [:]
