@@ -797,7 +797,7 @@ def chartLintHandler(scmVars) {
   // this will verify that version files had helm-valid version numbers during linting step
   for (chart in pipeline.deployments) { 
     if (chart.chart) {
-      chartVersion(defaults, chart.chart, "test.${env.BUILD_NUMBER}", scmVars.GIT_COMMIT)
+      chartVersion(defaults, chart.chart, "test.${env.BUILD_NUMBER}", scmVars.GIT_COMMIT, chart.setAppVersion)
 
       // grab current config object that is applicable to test section from all deployments
       def commandString = "helm lint ${chartLocation(defaults, chart.chart)}"
@@ -830,7 +830,7 @@ def chartProdHandler(scmVars) {
         if (chart.chart) {
 
           // modify chart version
-          def chartYamlVersion = chartVersion(defaults, chart.chart, "prod.${env.BUILD_NUMBER}", scmVars.GIT_COMMIT)
+          def chartYamlVersion = chartVersion(defaults, chart.chart, "prod.${env.BUILD_NUMBER}", scmVars.GIT_COMMIT, chart.setAppVersion)
 
           // unstash values changes if applicable
           unstashCheck("${chart.chart}-values-${env.BUILD_ID}".replaceAll('-','_'))
@@ -1052,7 +1052,7 @@ def chartProdVersion(scmVars) {
         if (chart.chart) {
 
           // modify chart version
-          def chartYamlVersion = chartVersion(defaults, chart.chart, "", "")
+          def chartYamlVersion = chartVersion(defaults, chart.chart, "", "", chart.setAppVersion)
 
           // unstash values changes if applicable
           unstashCheck("${chart.chart}-values-${env.BUILD_ID}".replaceAll('-','_'))
