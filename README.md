@@ -735,10 +735,10 @@ helmRepos:
   - name: incubator
     url: https://kubernetes-charts-incubator.storage.googleapis.com
 builds:
-  - image: bash:latest
+  - image: bash:4.4.23
     script: scripts/generatefile.sh
     shell: /bin/bash
-  - image: bash:latest
+  - image: bash:4.4.23
     commands: |
       echo "echo \"test from inline: running in ${PIPELINE_WORKSPACE}\" > testfrominline.sh
     shell: /bin/bash
@@ -780,7 +780,7 @@ deployments:
         - key: ingress.staging.path
           value: /
       tests:
-        - image: bash:latest
+        - image: bash:4.4.23
           script: scripts/stageTest.sh
         - image: quay.io/maratoid/helm:latest
           commands: |
