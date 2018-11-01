@@ -625,6 +625,7 @@ Setting | Description
 `configs` | Array of pipeline stage configurations objects
 `deployments` | Equivalent to `configs`
 `configs.[].chart` | Chart name under `charts`
+`configs.[].setAppVersion` | update `appVersion` to match `version` in Chart.yaml. False by default
 `configs.[].timeout` | Helm timeout for things like helm tests
 `configs.[].retries` | Humber of retries for things like helm tests
 `configs.[].release` | Helm prod release name
