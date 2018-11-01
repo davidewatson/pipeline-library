@@ -1062,7 +1062,7 @@ def chartProdVersion(scmVars) {
         if (chart.chart) {
 
           // modify chart version
-          def chartYamlVersion = chartVersion(defaults, chart.chart, "", "", , chart.setAppVersion)
+          def chartYamlVersion = chartVersion(defaults, chart.chart, "", "", chart.setAppVersion)
 
           // unstash values changes if applicable
           unstashCheck("${chart.chart}-values-${env.BUILD_ID}".replaceAll('-','_'))
