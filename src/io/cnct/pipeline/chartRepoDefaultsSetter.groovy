@@ -273,7 +273,8 @@ def setDefaults(rawSettings, defaults) {
         config.timeout = defaults.timeout
       }
 
-      if (!config.setAppVersion) {
+      // force true or false
+      if (config.setAppVersion != true) {
         config.setAppVersion = false
       }
 
@@ -330,7 +331,8 @@ def setDefaults(rawSettings, defaults) {
         config.timeout = defaults.timeout
       }
 
-      if (!config.setAppVersion) {
+      // force true or false
+      if (config.setAppVersion != true) {
         config.setAppVersion = false
       }
 
