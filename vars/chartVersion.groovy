@@ -6,9 +6,6 @@ def call(Map defaultVals, String packageName, String preReleaseInfo, String sha,
     error "Invalid .versionfile contents: ${versionFileContents}"
   }
 
-  def updatedBuild = isPathChange(defaultVals.versionfile, "${env.CHANGE_ID}") ? 
-    versionFileComponents[2].toInteger() : versionFileComponents[2].toInteger() + 1
-
   // load chart yaml
   def chartYaml = parseYaml(readFile("${pwd()}/${chartLocation(defaultVals, packageName)}/Chart.yaml"))
 
@@ -26,11 +23,11 @@ def call(Map defaultVals, String packageName, String preReleaseInfo, String sha,
       chartVersionComponents << sha
     }
 
-    chartVersionComponents[0] = "${versionFileComponents[0]}.${versionFileComponents[1]}.${Integer.toString(updatedBuild)}-${preReleaseInfo}"
+    chartVersionComponents[0] = "${versionFileComponents[0]}.${versionFileComponents[1]}.${versionFileComponents[2]}-${preReleaseInfo}"
 
     chartYaml.version = chartVersionComponents.join('+')
   } else {
-    chartYaml.version = "${versionFileComponents[0]}.${versionFileComponents[1]}.${Integer.toString(updatedBuild)}".toString()
+    chartYaml.version = "${versionFileComponents[0]}.${versionFileComponents[1]}.${versionFileComponents[2]}".toString()
   }
 
   if (setAppVersion) {
