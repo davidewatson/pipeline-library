@@ -350,11 +350,6 @@ def runPR() {
       // run before scripts
       executeUserScript('Executing global \'before\' scripts', pipeline.beforeScript)
 
-      // update the versionfile
-      if (!isPathChange(defaults.versionfile, "${env.CHANGE_ID}")) {
-        bumpVersionfile(defaults)
-      }
-
       buildsTestHandler(scmVars)
       chartLintHandler(scmVars)
 
@@ -390,11 +385,6 @@ def runMerge() {
 
       // run before scripts
       executeUserScript('Executing global \'before\' scripts', pipeline.beforeScript)
-
-      // update the versionfile
-      if (!isPathChange(defaults.versionfile, "${env.CHANGE_ID}")) {
-        bumpVersionfile(defaults)
-      }
 
       buildsProdHandler(scmVars)
       chartProdHandler(scmVars)
@@ -1116,6 +1106,11 @@ def pushGitChanges(scmVars) {
           // unstash values changes if applicable
           unstashCheck("${chart.chart}-values-${env.BUILD_ID}".replaceAll('-','_'))
         }
+      }
+
+      // update the versionfile
+      if (!isPathChange(defaults.versionfile, "${env.CHANGE_ID}")) {
+        bumpVersionfile(defaults)
       }
 
       withCredentials(
