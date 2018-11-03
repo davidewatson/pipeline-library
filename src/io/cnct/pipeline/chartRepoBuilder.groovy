@@ -185,8 +185,8 @@ def initializeHandler() {
       deleteDir()
       
       scmVars = checkout scm
-      container('helm') {
-        
+
+      container('yaml') {
         stage('Make sure this is not a self-version bump') {
           if (ciSkip(defaults)) {
             isSelfCommit = true
@@ -194,40 +194,51 @@ def initializeHandler() {
           }
         }
 
-        stage('Create jenkins storage class') {
-          echo('Loading jenkins storage class template')
-          def storageClass = parseYaml(libraryResource("io/cnct/pipeline/jenkins-storage-class.yaml"))
-          storageClass.metadata.name = "jenkins-storageclass-${kubeName(env.JOB_NAME)}".toString()
-          storageClass.parameters.zones = defaults.pvcZone
-          toYamlFile(storageClass, "${pwd()}/jenkins-storageclass-${kubeName(env.JOB_NAME)}.yaml")
+        stage('process required kubernetes primitives') {
+          echo('Processing jenkins storage class template')
+          writeFile(file: "${pwd()}/jenkins-storageclass-${kubeName(env.JOB_NAME)}.yaml", 
+            text: libraryResource("io/cnct/pipeline/jenkins-storage-class.yaml"))
+          replaceInYaml("${pwd()}/jenkins-storageclass-${kubeName(env.JOB_NAME)}.yaml", 
+          'metadata.name', "jenkins-storageclass-${kubeName(env.JOB_NAME)}")
+          replaceInYaml("${pwd()}/jenkins-storageclass-${kubeName(env.JOB_NAME)}.yaml", 
+          'parameters.zones', defaults.pvcZone)
 
-          echo('creating jenkins storage class')
+          echo('Processing pipeline worskspace pvc template')
+          writeFile(file: "${pwd()}/jenkins-storageclass-${kubeName(env.JOB_NAME)}.yaml", 
+            text: libraryResource("io/cnct/pipeline/utility-pvc.yaml"))
+          replaceInYaml("${pwd()}/jenkins-storageclass-${kubeName(env.JOB_NAME)}.yaml", 
+          'metadata.name', "jenkins-workspace-${kubeName(env.JOB_NAME)}")
+          replaceInYaml("${pwd()}/jenkins-storageclass-${kubeName(env.JOB_NAME)}.yaml", 
+          'spec.resources.requests.storage', defaults.workspaceSize)
+          replaceInYaml("${pwd()}/jenkins-storageclass-${kubeName(env.JOB_NAME)}.yaml", 
+          'spec.storageClassName', "jenkins-storageclass-${kubeName(env.JOB_NAME)}")
+
+          echo('var/lib/docker pvc template')
+          writeFile(file: "${pwd()}/jenkins-storageclass-${kubeName(env.JOB_NAME)}.yaml", 
+            text: libraryResource("io/cnct/pipeline/utility-pvc.yaml"))
+          replaceInYaml("${pwd()}/jenkins-varlibdocker-${kubeName(env.JOB_NAME)}.yaml", 
+          'metadata.name', "jenkins-varlibdocker-${kubeName(env.JOB_NAME)}")
+          replaceInYaml("${pwd()}/jenkins-varlibdocker-${kubeName(env.JOB_NAME)}.yaml", 
+          'spec.resources.requests.storage', defaults.dockerBuilderSize)
+          replaceInYaml("${pwd()}/jenkins-varlibdocker-${kubeName(env.JOB_NAME)}.yaml", 
+          'spec.storageClassName', "jenkins-storageclass-${kubeName(env.JOB_NAME)}")
+        }        
+        
+      }
+
+      container('helm') {
+
+        stage('Create jenkins storage class') {
           sh("cat ${pwd()}/jenkins-storageclass-${kubeName(env.JOB_NAME)}.yaml")
           sh("kubectl create -f ${pwd()}/jenkins-storageclass-${kubeName(env.JOB_NAME)}.yaml")
         }
 
         stage('Create workspace pvc') {
-          echo('Loading pipeline worskspace pvc template')
-          def workspaceInfo = parseYaml(libraryResource("io/cnct/pipeline/utility-pvc.yaml"))
-          workspaceInfo.metadata.name = "jenkins-workspace-${kubeName(env.JOB_NAME)}".toString()
-          workspaceInfo.spec.resources.requests.storage = defaults.workspaceSize
-          workspaceInfo.spec.storageClassName = "jenkins-storageclass-${kubeName(env.JOB_NAME)}".toString()
-          toYamlFile(workspaceInfo, "${pwd()}/jenkins-workspace-${kubeName(env.JOB_NAME)}.yaml")
-
-          echo('creating workspace pvc')
           sh("cat ${pwd()}/jenkins-workspace-${kubeName(env.JOB_NAME)}.yaml")
           sh("kubectl create -f ${pwd()}/jenkins-workspace-${kubeName(env.JOB_NAME)}.yaml --namespace ${defaults.jenkinsNamespace}")
         }
 
         stage('Create var/lib/docker pvc') {
-          echo('Loading var/lib/docker pvc template')
-          def dockerInfo = parseYaml(libraryResource("io/cnct/pipeline/utility-pvc.yaml"))
-          dockerInfo.metadata.name = "jenkins-varlibdocker-${kubeName(env.JOB_NAME)}".toString()
-          dockerInfo.spec.resources.requests.storage = defaults.dockerBuilderSize
-          dockerInfo.spec.storageClassName = "jenkins-storageclass-${kubeName(env.JOB_NAME)}".toString()
-          toYamlFile(dockerInfo, "${pwd()}/jenkins-varlibdocker-${kubeName(env.JOB_NAME)}.yaml")
-
-          echo('creating var/lib/docker pvc')
           sh("cat ${pwd()}/jenkins-varlibdocker-${kubeName(env.JOB_NAME)}.yaml")
           sh("kubectl create -f ${pwd()}/jenkins-varlibdocker-${kubeName(env.JOB_NAME)}.yaml --namespace ${defaults.jenkinsNamespace}")
         }
@@ -571,18 +582,22 @@ def buildsTestHandler(scmVars) {
       parallel parallelTagSteps
       parallel parallelPushSteps
 
+    }
+  }
+
+  container('yaml') {
+    stage('update values.yaml files') {
       // process values yamls for modified charts
       // modify the appropriate image objects under values yaml to point to the newly tagged image
       // write back to values.yaml and stash 
       for (chart in chartsWithContainers) { 
-        def valuesYaml = parseYaml(readFile("${pwd()}/${chartLocation(defaults, chart.chart)}/values.yaml"))
-
         if (chart.tagValue) {
-          mapValueByPath(chart.tagValue, valuesYaml, "${useTag}")
+          replaceInYaml("${pwd()}/${chartLocation(defaults, chart.chart)}/values.yaml", 
+            chart.tagValue, "${useTag}")
         } else {
-          mapValueByPath(chart.value, valuesYaml, "${defaults.docker.registry}/${chart.image}:${useTag}")
+          replaceInYaml("${pwd()}/${chartLocation(defaults, chart.chart)}/values.yaml", 
+            chart.value, "${defaults.docker.registry}/${chart.image}:${useTag}")
         }
-        toYamlFile(valuesYaml, "${pwd()}/${chartLocation(defaults, chart.chart)}/values.yaml")
 
         stash(
           name: "${chart.chart}-values-${env.BUILD_ID}".replaceAll('-','_'),
@@ -591,6 +606,7 @@ def buildsTestHandler(scmVars) {
       }
     }
   }
+
 
   container('helm') {
     stage('Running cve scans') {
@@ -643,18 +659,22 @@ def buildsStageHandler(scmVars) {
       parallel parallelTagSteps
       parallel parallelPushSteps
 
+    }
+  }
+
+  container('yaml') {
+    stage('update values.yaml files') {
       // process values yamls for modified charts
       // modify the appropriate image objects under values yaml to point to the newly tagged image
-      // write back to values.yaml and stash
+      // write back to values.yaml and stash 
       for (chart in chartsWithContainers) {
-        def valuesYaml = parseYaml(readFile("${pwd()}/${chartLocation(defaults, chart.chart)}/values.yaml"))
-
         if (chart.tagValue) {
-          mapValueByPath(chart.tagValue, valuesYaml, "${useTag}")
+          replaceInYaml("${pwd()}/${chartLocation(defaults, chart.chart)}/values.yaml", 
+            chart.tagValue, "${useTag}")
         } else {
-          mapValueByPath(chart.value, valuesYaml, "${defaults.docker.registry}/${chart.image}:${useTag}")
+          replaceInYaml("${pwd()}/${chartLocation(defaults, chart.chart)}/values.yaml", 
+            chart.value, "${defaults.docker.registry}/${chart.image}:${useTag}")
         }
-        toYamlFile(valuesYaml, "${pwd()}/${chartLocation(defaults, chart.chart)}/values.yaml")
 
         stash(
           name: "${chart.chart}-values-${env.BUILD_ID}".replaceAll('-','_'),
@@ -775,19 +795,22 @@ def buildsProdHandler(scmVars) {
       parallel parallelBuildSteps
       parallel parallelTagSteps
       parallel parallelPushSteps
+    }
+  }
 
+  container('yaml') {
+    stage('update values.yaml files') {
       // process values yamls for modified charts
       // modify the appropriate image objects under values yaml to point to the newly tagged image
-      // write back to values.yaml and stash
+      // write back to values.yaml and stash 
       for (chart in chartsWithContainers) {
-        def valuesYaml = parseYaml(readFile("${pwd()}/${chartLocation(defaults, chart.chart)}/values.yaml"))
-
         if (chart.tagValue) {
-          mapValueByPath(chart.tagValue, valuesYaml, "${useTag}")
+          replaceInYaml("${pwd()}/${chartLocation(defaults, chart.chart)}/values.yaml", 
+            chart.tagValue, "${useTag}")
         } else {
-          mapValueByPath(chart.value, valuesYaml, "${defaults.docker.registry}/${chart.image}:${useTag}")
+          replaceInYaml("${pwd()}/${chartLocation(defaults, chart.chart)}/values.yaml", 
+            chart.value, "${defaults.docker.registry}/${chart.image}:${useTag}")
         }
-        toYamlFile(valuesYaml, "${pwd()}/${chartLocation(defaults, chart.chart)}/values.yaml")
 
         stash(
           name: "${chart.chart}-values-${env.BUILD_ID}".replaceAll('-','_'),

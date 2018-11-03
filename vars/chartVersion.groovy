@@ -1,13 +1,11 @@
 def call(Map defaultVals, String packageName, String preReleaseInfo, String sha, boolean setAppVersion) {
   def versionFileContents = readFile(defaultVals.versionfile).trim()
   def versionFileComponents = versionFileContents.split('\\.')
+  def finalVersion = ''
 
   if (versionFileComponents.length != 3) {
     error "Invalid .versionfile contents: ${versionFileContents}"
   }
-
-  // load chart yaml
-  def chartYaml = parseYaml(readFile("${pwd()}/${chartLocation(defaultVals, packageName)}/Chart.yaml"))
 
   if (preReleaseInfo != "") {
     if (sha == "") {
@@ -25,16 +23,18 @@ def call(Map defaultVals, String packageName, String preReleaseInfo, String sha,
 
     chartVersionComponents[0] = "${versionFileComponents[0]}.${versionFileComponents[1]}.${versionFileComponents[2]}-${preReleaseInfo}"
 
-    chartYaml.version = chartVersionComponents.join('+')
+    finalVersion = chartVersionComponents.join('+')
   } else {
-    chartYaml.version = "${versionFileComponents[0]}.${versionFileComponents[1]}.${versionFileComponents[2]}".toString()
+    finalVersion = "${versionFileComponents[0]}.${versionFileComponents[1]}.${versionFileComponents[2]}"
   }
 
+  replaceInYaml("${pwd()}/${chartLocation(defaultVals, packageName)}/Chart.yaml", 
+    'version', finalVersion)
+  
   if (setAppVersion) {
-    chartYaml.appVersion = chartYaml.version
+    replaceInYaml("${pwd()}/${chartLocation(defaultVals, packageName)}/Chart.yaml", 
+      'appVersion', finalVersion)
   }
-
-  toYamlFile(chartYaml, "${pwd()}/${chartLocation(defaultVals, packageName)}/Chart.yaml")
 
   // stash the Chart.yaml
   stash(
@@ -42,5 +42,5 @@ def call(Map defaultVals, String packageName, String preReleaseInfo, String sha,
     includes: "${chartLocation(defaultVals, packageName)}/Chart.yaml"
   )
 
-  return chartYaml.version
+  return finalVersion
 }
