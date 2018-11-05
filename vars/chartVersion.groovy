@@ -12,18 +12,7 @@ def call(Map defaultVals, String packageName, String preReleaseInfo, String sha,
       error "Git SHA must be specified!"
     }
 
-    def chartVersionComponents = []
-    chartVersionComponents.addAll(chartYaml.version.toString().split('\\+'))
-
-    if (chartVersionComponents.size() > 1) {
-      chartVersionComponents[1] = sha
-    } else {
-      chartVersionComponents << sha
-    }
-
-    chartVersionComponents[0] = "${versionFileComponents[0]}.${versionFileComponents[1]}.${versionFileComponents[2]}-${preReleaseInfo}"
-
-    finalVersion = chartVersionComponents.join('+')
+    finalVersion = "${versionFileComponents[0]}.${versionFileComponents[1]}.${versionFileComponents[2]}-${preReleaseInfo}+${sha}"
   } else {
     finalVersion = "${versionFileComponents[0]}.${versionFileComponents[1]}.${versionFileComponents[2]}"
   }
