@@ -30,6 +30,7 @@ images:
   helm: quay.io/samsung_cnct/pipeline-library-helm:latest
   vault: quay.io/samsung_cnct/pipeline-library-vault:latest
   script: quay.io/samsung_cnct/pipeline-library-script:latest
+  yaml: quay.io/samsung_cnct/pipeline-library-yaml:latest
 vault:
   server: http://vault-access.pipeline-tools.svc.cluster.local
   credentials: vault-plugin

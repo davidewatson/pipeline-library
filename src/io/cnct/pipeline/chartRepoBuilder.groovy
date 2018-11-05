@@ -185,8 +185,8 @@ def initializeHandler() {
       deleteDir()
       
       scmVars = checkout scm
-      container('helm') {
-        
+
+      container('yaml') {
         stage('Make sure this is not a self-version bump') {
           if (ciSkip(defaults)) {
             isSelfCommit = true
@@ -194,40 +194,51 @@ def initializeHandler() {
           }
         }
 
-        stage('Create jenkins storage class') {
-          echo('Loading jenkins storage class template')
-          def storageClass = parseYaml(libraryResource("io/cnct/pipeline/jenkins-storage-class.yaml"))
-          storageClass.metadata.name = "jenkins-storageclass-${kubeName(env.JOB_NAME)}".toString()
-          storageClass.parameters.zones = defaults.pvcZone
-          toYamlFile(storageClass, "${pwd()}/jenkins-storageclass-${kubeName(env.JOB_NAME)}.yaml")
+        stage('process required kubernetes primitives') {
+          echo('Processing jenkins storage class template')
+          writeFile(file: "${pwd()}/jenkins-storageclass-${kubeName(env.JOB_NAME)}.yaml", 
+            text: libraryResource("io/cnct/pipeline/jenkins-storage-class.yaml"))
+          replaceInYaml("${pwd()}/jenkins-storageclass-${kubeName(env.JOB_NAME)}.yaml", 
+          'metadata.name', "jenkins-storageclass-${kubeName(env.JOB_NAME)}")
+          replaceInYaml("${pwd()}/jenkins-storageclass-${kubeName(env.JOB_NAME)}.yaml", 
+          'parameters.zones', defaults.pvcZone)
 
-          echo('creating jenkins storage class')
+          echo('Processing pipeline worskspace pvc template')
+          writeFile(file: "${pwd()}/jenkins-workspace-${kubeName(env.JOB_NAME)}.yaml", 
+            text: libraryResource("io/cnct/pipeline/utility-pvc.yaml"))
+          replaceInYaml("${pwd()}/jenkins-workspace-${kubeName(env.JOB_NAME)}.yaml", 
+          'metadata.name', "jenkins-workspace-${kubeName(env.JOB_NAME)}")
+          replaceInYaml("${pwd()}/jenkins-workspace-${kubeName(env.JOB_NAME)}.yaml", 
+          'spec.resources.requests.storage', defaults.workspaceSize)
+          replaceInYaml("${pwd()}/jenkins-workspace-${kubeName(env.JOB_NAME)}.yaml", 
+          'spec.storageClassName', "jenkins-storageclass-${kubeName(env.JOB_NAME)}")
+
+          echo('var/lib/docker pvc template')
+          writeFile(file: "${pwd()}/jenkins-varlibdocker-${kubeName(env.JOB_NAME)}.yaml", 
+            text: libraryResource("io/cnct/pipeline/utility-pvc.yaml"))
+          replaceInYaml("${pwd()}/jenkins-varlibdocker-${kubeName(env.JOB_NAME)}.yaml", 
+          'metadata.name', "jenkins-varlibdocker-${kubeName(env.JOB_NAME)}")
+          replaceInYaml("${pwd()}/jenkins-varlibdocker-${kubeName(env.JOB_NAME)}.yaml", 
+          'spec.resources.requests.storage', defaults.dockerBuilderSize)
+          replaceInYaml("${pwd()}/jenkins-varlibdocker-${kubeName(env.JOB_NAME)}.yaml", 
+          'spec.storageClassName', "jenkins-storageclass-${kubeName(env.JOB_NAME)}")
+        }        
+        
+      }
+
+      container('helm') {
+
+        stage('Create jenkins storage class') {
           sh("cat ${pwd()}/jenkins-storageclass-${kubeName(env.JOB_NAME)}.yaml")
           sh("kubectl create -f ${pwd()}/jenkins-storageclass-${kubeName(env.JOB_NAME)}.yaml")
         }
 
         stage('Create workspace pvc') {
-          echo('Loading pipeline worskspace pvc template')
-          def workspaceInfo = parseYaml(libraryResource("io/cnct/pipeline/utility-pvc.yaml"))
-          workspaceInfo.metadata.name = "jenkins-workspace-${kubeName(env.JOB_NAME)}".toString()
-          workspaceInfo.spec.resources.requests.storage = defaults.workspaceSize
-          workspaceInfo.spec.storageClassName = "jenkins-storageclass-${kubeName(env.JOB_NAME)}".toString()
-          toYamlFile(workspaceInfo, "${pwd()}/jenkins-workspace-${kubeName(env.JOB_NAME)}.yaml")
-
-          echo('creating workspace pvc')
           sh("cat ${pwd()}/jenkins-workspace-${kubeName(env.JOB_NAME)}.yaml")
           sh("kubectl create -f ${pwd()}/jenkins-workspace-${kubeName(env.JOB_NAME)}.yaml --namespace ${defaults.jenkinsNamespace}")
         }
 
         stage('Create var/lib/docker pvc') {
-          echo('Loading var/lib/docker pvc template')
-          def dockerInfo = parseYaml(libraryResource("io/cnct/pipeline/utility-pvc.yaml"))
-          dockerInfo.metadata.name = "jenkins-varlibdocker-${kubeName(env.JOB_NAME)}".toString()
-          dockerInfo.spec.resources.requests.storage = defaults.dockerBuilderSize
-          dockerInfo.spec.storageClassName = "jenkins-storageclass-${kubeName(env.JOB_NAME)}".toString()
-          toYamlFile(dockerInfo, "${pwd()}/jenkins-varlibdocker-${kubeName(env.JOB_NAME)}.yaml")
-
-          echo('creating var/lib/docker pvc')
           sh("cat ${pwd()}/jenkins-varlibdocker-${kubeName(env.JOB_NAME)}.yaml")
           sh("kubectl create -f ${pwd()}/jenkins-varlibdocker-${kubeName(env.JOB_NAME)}.yaml --namespace ${defaults.jenkinsNamespace}")
         }
@@ -397,7 +408,6 @@ def runMerge() {
       }
 
       buildsProdHandler(scmVars)
-      chartProdHandler(scmVars)
       chartProdVersion(scmVars)
       deployToProdHandler(scmVars)
       startTriggers(scmVars)
@@ -571,18 +581,22 @@ def buildsTestHandler(scmVars) {
       parallel parallelTagSteps
       parallel parallelPushSteps
 
+    }
+  }
+
+  container('yaml') {
+    stage('update values.yaml files') {
       // process values yamls for modified charts
       // modify the appropriate image objects under values yaml to point to the newly tagged image
       // write back to values.yaml and stash 
       for (chart in chartsWithContainers) { 
-        def valuesYaml = parseYaml(readFile("${pwd()}/${chartLocation(defaults, chart.chart)}/values.yaml"))
-
         if (chart.tagValue) {
-          mapValueByPath(chart.tagValue, valuesYaml, "${useTag}")
+          replaceInYaml("${pwd()}/${chartLocation(defaults, chart.chart)}/values.yaml", 
+            chart.tagValue, "${useTag}")
         } else {
-          mapValueByPath(chart.value, valuesYaml, "${defaults.docker.registry}/${chart.image}:${useTag}")
+          replaceInYaml("${pwd()}/${chartLocation(defaults, chart.chart)}/values.yaml", 
+            chart.value, "${defaults.docker.registry}/${chart.image}:${useTag}")
         }
-        toYamlFile(valuesYaml, "${pwd()}/${chartLocation(defaults, chart.chart)}/values.yaml")
 
         stash(
           name: "${chart.chart}-values-${env.BUILD_ID}".replaceAll('-','_'),
@@ -591,6 +605,7 @@ def buildsTestHandler(scmVars) {
       }
     }
   }
+
 
   container('helm') {
     stage('Running cve scans') {
@@ -643,18 +658,22 @@ def buildsStageHandler(scmVars) {
       parallel parallelTagSteps
       parallel parallelPushSteps
 
+    }
+  }
+
+  container('yaml') {
+    stage('update values.yaml files') {
       // process values yamls for modified charts
       // modify the appropriate image objects under values yaml to point to the newly tagged image
-      // write back to values.yaml and stash
+      // write back to values.yaml and stash 
       for (chart in chartsWithContainers) {
-        def valuesYaml = parseYaml(readFile("${pwd()}/${chartLocation(defaults, chart.chart)}/values.yaml"))
-
         if (chart.tagValue) {
-          mapValueByPath(chart.tagValue, valuesYaml, "${useTag}")
+          replaceInYaml("${pwd()}/${chartLocation(defaults, chart.chart)}/values.yaml", 
+            chart.tagValue, "${useTag}")
         } else {
-          mapValueByPath(chart.value, valuesYaml, "${defaults.docker.registry}/${chart.image}:${useTag}")
+          replaceInYaml("${pwd()}/${chartLocation(defaults, chart.chart)}/values.yaml", 
+            chart.value, "${defaults.docker.registry}/${chart.image}:${useTag}")
         }
-        toYamlFile(valuesYaml, "${pwd()}/${chartLocation(defaults, chart.chart)}/values.yaml")
 
         stash(
           name: "${chart.chart}-values-${env.BUILD_ID}".replaceAll('-','_'),
@@ -775,19 +794,22 @@ def buildsProdHandler(scmVars) {
       parallel parallelBuildSteps
       parallel parallelTagSteps
       parallel parallelPushSteps
+    }
+  }
 
+  container('yaml') {
+    stage('update values.yaml files') {
       // process values yamls for modified charts
       // modify the appropriate image objects under values yaml to point to the newly tagged image
-      // write back to values.yaml and stash
+      // write back to values.yaml and stash 
       for (chart in chartsWithContainers) {
-        def valuesYaml = parseYaml(readFile("${pwd()}/${chartLocation(defaults, chart.chart)}/values.yaml"))
-
         if (chart.tagValue) {
-          mapValueByPath(chart.tagValue, valuesYaml, "${useTag}")
+          replaceInYaml("${pwd()}/${chartLocation(defaults, chart.chart)}/values.yaml", 
+            chart.tagValue, "${useTag}")
         } else {
-          mapValueByPath(chart.value, valuesYaml, "${defaults.docker.registry}/${chart.image}:${useTag}")
+          replaceInYaml("${pwd()}/${chartLocation(defaults, chart.chart)}/values.yaml", 
+            chart.value, "${defaults.docker.registry}/${chart.image}:${useTag}")
         }
-        toYamlFile(valuesYaml, "${pwd()}/${chartLocation(defaults, chart.chart)}/values.yaml")
 
         stash(
           name: "${chart.chart}-values-${env.BUILD_ID}".replaceAll('-','_'),
@@ -805,14 +827,18 @@ def chartLintHandler(scmVars) {
 
   // read in all appropriate versionfiles and replace Chart.yaml versions 
   // this will verify that version files had helm-valid version numbers during linting step
-  for (chart in pipeline.deployments) { 
-    if (chart.chart) {
-      chartVersion(defaults, chart.chart, "test.${env.BUILD_NUMBER}", scmVars.GIT_COMMIT, chart.setAppVersion)
+  container('yaml') {
+    stage('Setting chart version before lint') {
+      for (chart in pipeline.deployments) { 
+        if (chart.chart) {
+          chartVersion(defaults, chart.chart, "test.${env.BUILD_NUMBER}", scmVars.GIT_COMMIT, chart.setAppVersion)
 
-      // grab current config object that is applicable to test section from all deployments
-      def commandString = "helm lint ${chartLocation(defaults, chart.chart)}"
-      parallelLintSteps["${chart.chart}-lint"] = { sh(commandString) }
-    } 
+          // grab current config object that is applicable to test section from all deployments
+          def commandString = "helm lint ${chartLocation(defaults, chart.chart)}"
+          parallelLintSteps["${chart.chart}-lint"] = { sh(commandString) }
+        } 
+      }
+    }
   }
 
   container('helm') {
@@ -831,16 +857,16 @@ def chartLintHandler(scmVars) {
 }
 
 // upload charts to helm registry
-def chartProdHandler(scmVars) {
+def chartProdVersion(scmVars) {
   def parallelChartSteps = [:] 
-  
-  container('helm') {
-    stage('Preparing chart for prod') {
+
+  container('yaml') {
+    stage('Preparing prod version commands') {
       for (chart in pipeline.deployments) {
         if (chart.chart) {
 
           // modify chart version
-          def chartYamlVersion = chartVersion(defaults, chart.chart, "prod.${env.BUILD_NUMBER}", scmVars.GIT_COMMIT, chart.setAppVersion)
+          def chartYamlVersion = chartVersion(defaults, chart.chart, "", "", chart.setAppVersion)
 
           // unstash values changes if applicable
           unstashCheck("${chart.chart}-values-${env.BUILD_ID}".replaceAll('-','_'))
@@ -871,6 +897,11 @@ def chartProdHandler(scmVars) {
           }
         }
       }
+    }
+  }
+  
+  container('helm') {
+    stage('Running prod version commands') {   
 
       parallel parallelChartSteps
     }
@@ -1051,52 +1082,6 @@ def deployToProdHandler(scmVars) {
   }
 
   executeUserScript('Executing prod \'after\' script', pipeline.prod.afterScript)
-}
-
-def chartProdVersion(scmVars) {
-  def parallelChartSteps = [:] 
-  
-  container('helm') {
-    stage('Preparing chart for production version') {
-      for (chart in pipeline.deployments) {
-        if (chart.chart) {
-
-          // modify chart version
-          def chartYamlVersion = chartVersion(defaults, chart.chart, "", "", chart.setAppVersion)
-
-          // unstash values changes if applicable
-          unstashCheck("${chart.chart}-values-${env.BUILD_ID}".replaceAll('-','_'))
-
-          // package chart, send it to registry
-          parallelChartSteps["${chart.chart}-upload"] = {
-            withCredentials(
-              [usernamePassword(
-                credentialsId: defaults.helm.credentials, 
-                usernameVariable: 'REGISTRY_USER',
-                passwordVariable: 'REGISTRY_PASSWORD')]) {
-                def registryUser = env.REGISTRY_USER
-                def registryPass = env.REGISTRY_PASSWORD
-                def helmCommand = """helm init --client-only
-                  helm repo add pipeline https://${defaults.helm.registry}"""
-
-                for (repo in pipeline.helmRepos) {
-                  helmCommand = "${helmCommand}\nhelm repo add ${repo.name} ${repo.url}"
-                }
-
-                helmCommand = """${helmCommand}
-                  helm dependency update --debug ${chartLocation(defaults, chart.chart)}
-                  helm package --debug ${chartLocation(defaults, chart.chart)}
-                  curl -u ${registryUser}:${registryPass} --data-binary @${chart.chart}-${chartYamlVersion}.tgz https://${defaults.helm.registry}/api/charts"""
-
-                sh(helmCommand)
-            }
-          }
-        }
-      }
-
-      parallel parallelChartSteps
-    }
-  }
 }
 
 def pushGitChanges(scmVars) {

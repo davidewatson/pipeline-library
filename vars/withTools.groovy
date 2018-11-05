@@ -13,6 +13,7 @@ def call(Map parameters = [:], body) {
   def dindImage = parameters.get('dindImage', globalDefaults.images.dind)
   def helmImage = parameters.get('helmImage', globalDefaults.images.helm)
   def vaultImage = parameters.get('vaultImage', globalDefaults.images.vault)
+  def yamlImage = parameters.get('yamlImage', globalDefaults.images.yaml)
   def imagePullSecrets = parameters.get('imagePullSecrets', [])
   def volumes = parameters.get('volumes', [])
   def containersParam = parameters.get('containers', [])
@@ -79,6 +80,15 @@ spec:
     containerTemplate(
       name: 'vault', 
       image: "${vaultImage}",
+      command: '/bin/sh -c', 
+      args: 'cat', 
+      ttyEnabled: true, 
+      envVars: envVars, 
+      alwaysPullImage: true))
+  containerTemplates.add(
+    containerTemplate(
+      name: 'yaml', 
+      image: "${yamlImage}",
       command: '/bin/sh -c', 
       args: 'cat', 
       ttyEnabled: true, 
