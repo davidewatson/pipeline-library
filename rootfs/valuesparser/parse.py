@@ -18,7 +18,7 @@ args = parser.parse_args()
 yaml = YAML()
 yaml.explicit_start = False
 yaml.indent(mapping=3)
-yaml.preserve_quotes = True  # not necessary for your current input
+yaml.preserve_quotes = True
 
 try:
   with open(args.filename) as fp:
