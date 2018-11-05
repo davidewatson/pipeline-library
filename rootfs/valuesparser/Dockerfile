@@ -5,7 +5,8 @@ COPY . /usr/local/bin
 
 WORKDIR /usr/local/bin
 
-RUN pip install --no-cache-dir -r requirements.txt \
+RUN apk add --no-cache git \
+  && pip install --no-cache-dir -r requirements.txt \
   && chmod +x ./parse.py \
   && rm requirements.txt
 
