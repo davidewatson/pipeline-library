@@ -214,7 +214,7 @@ def initializeHandler() {
           'spec.storageClassName', "jenkins-storageclass-${kubeName(env.JOB_NAME)}")
 
           echo('var/lib/docker pvc template')
-          writeFile(file: "${pwd()}/jenkins-storageclass-${kubeName(env.JOB_NAME)}.yaml", 
+          writeFile(file: "${pwd()}/jenkins-varlibdocker-${kubeName(env.JOB_NAME)}.yaml", 
             text: libraryResource("io/cnct/pipeline/utility-pvc.yaml"))
           replaceInYaml("${pwd()}/jenkins-varlibdocker-${kubeName(env.JOB_NAME)}.yaml", 
           'metadata.name', "jenkins-varlibdocker-${kubeName(env.JOB_NAME)}")
