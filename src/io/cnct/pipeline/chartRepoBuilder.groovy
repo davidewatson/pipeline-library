@@ -204,13 +204,13 @@ def initializeHandler() {
           'parameters.zones', defaults.pvcZone)
 
           echo('Processing pipeline worskspace pvc template')
-          writeFile(file: "${pwd()}/jenkins-workspace-${kubeName(env.JOB_NAME)}", 
+          writeFile(file: "${pwd()}/jenkins-workspace-${kubeName(env.JOB_NAME)}.yaml", 
             text: libraryResource("io/cnct/pipeline/utility-pvc.yaml"))
-          replaceInYaml("${pwd()}/jenkins-workspace-${kubeName(env.JOB_NAME)}", 
+          replaceInYaml("${pwd()}/jenkins-workspace-${kubeName(env.JOB_NAME)}.yaml", 
           'metadata.name', "jenkins-workspace-${kubeName(env.JOB_NAME)}")
-          replaceInYaml("${pwd()}/jenkins-workspace-${kubeName(env.JOB_NAME)}", 
+          replaceInYaml("${pwd()}/jenkins-workspace-${kubeName(env.JOB_NAME)}.yaml", 
           'spec.resources.requests.storage', defaults.workspaceSize)
-          replaceInYaml("${pwd()}/jenkins-workspace-${kubeName(env.JOB_NAME)}", 
+          replaceInYaml("${pwd()}/jenkins-workspace-${kubeName(env.JOB_NAME)}.yaml", 
           'spec.storageClassName', "jenkins-storageclass-${kubeName(env.JOB_NAME)}")
 
           echo('var/lib/docker pvc template')
