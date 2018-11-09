@@ -179,11 +179,7 @@ def initializeHandler() {
     envVars: pipelineEnvVariables, 
     defaults: defaults,
     volumes: [secretVolume(secretName: pipeline.vault.tls.secret, mountPath: '/etc/vault/tls')]) {
-    inside(label: buildId('tools')) {
-      
-      // cleanup workspace
-      deleteDir()
-      
+    inside(label: buildId('tools')) {      
       scmVars = checkout scm
 
       container('yaml') {
@@ -1088,8 +1084,8 @@ def pushGitChanges(scmVars) {
   
   container('helm') {
     stage('Applying and pushing git changes') {
-      
-      deleteDir()
+
+      sh 'git clean -fdxq'
       checkout scm
       
       for (chart in pipeline.deployments) {
