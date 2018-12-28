@@ -1119,7 +1119,7 @@ def pushGitChanges(scmVars) {
           git add .
           git commit --allow-empty -m "${defaults.ciSkip}"
           git push ${repoString} HEAD:refs/heads/master
-          """
+          """.replace("CI_SKIP_VERSION", "${defaults.versionfile}".execute().text)
           
           sh(gitCommand)
       }
