@@ -11,7 +11,7 @@ retries: 1
 timeout: 600
 versionfile: .versionfile
 shell: sh
-ciSkip: "Update versionfile to CI_SKIP_VERSION."
+ciSkip: "Bump version."
 targets: 
   prodCluster: secret/prod-cluster/config
   stagingCluster: secret/staging-cluster/config
