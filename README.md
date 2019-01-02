@@ -399,7 +399,7 @@ images:
   helm: quay.io/maratoid/helm:latest
   vault: quay.io/maratoid/vault:latest
   script: quay.io/maratoid/script:latest
-ciSkip: "Bump version."
+ciSkip: "Increment version (stored in .versionfile)."
 github:
   credentials: github-access
   pushUser: jenkins

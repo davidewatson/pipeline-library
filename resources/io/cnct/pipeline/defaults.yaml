@@ -11,7 +11,7 @@ retries: 1
 timeout: 600
 versionfile: .versionfile
 shell: sh
-ciSkip: "Bump version."
+ciSkip: "Increment version (stored in .versionfile)."
 targets: 
   prodCluster: secret/prod-cluster/config
   stagingCluster: secret/staging-cluster/config
