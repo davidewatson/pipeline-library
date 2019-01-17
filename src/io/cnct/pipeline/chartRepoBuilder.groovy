@@ -226,17 +226,17 @@ def initializeHandler() {
 
         stage('Create jenkins storage class') {
           sh("cat ${pwd()}/jenkins-storageclass-${kubeName(env.JOB_NAME)}.yaml")
-          sh("kubectl create -f ${pwd()}/jenkins-storageclass-${kubeName(env.JOB_NAME)}.yaml")
+          sh("kubectl apply -f ${pwd()}/jenkins-storageclass-${kubeName(env.JOB_NAME)}.yaml")
         }
 
         stage('Create workspace pvc') {
           sh("cat ${pwd()}/jenkins-workspace-${kubeName(env.JOB_NAME)}.yaml")
-          sh("kubectl create -f ${pwd()}/jenkins-workspace-${kubeName(env.JOB_NAME)}.yaml --namespace ${defaults.jenkinsNamespace}")
+          sh("kubectl apply -f ${pwd()}/jenkins-workspace-${kubeName(env.JOB_NAME)}.yaml --namespace ${defaults.jenkinsNamespace}")
         }
 
         stage('Create var/lib/docker pvc') {
           sh("cat ${pwd()}/jenkins-varlibdocker-${kubeName(env.JOB_NAME)}.yaml")
-          sh("kubectl create -f ${pwd()}/jenkins-varlibdocker-${kubeName(env.JOB_NAME)}.yaml --namespace ${defaults.jenkinsNamespace}")
+          sh("kubectl apply -f ${pwd()}/jenkins-varlibdocker-${kubeName(env.JOB_NAME)}.yaml --namespace ${defaults.jenkinsNamespace}")
         }
 
         stage('Create image pull secrets') {
@@ -251,7 +251,7 @@ def initializeHandler() {
 
               def createSecrets = """
                 set +x
-                kubectl create secret docker-registry ${pull.name}-${kubeName(env.JOB_NAME)} \
+                kubectl apply secret docker-registry ${pull.name}-${kubeName(env.JOB_NAME)} \
                   --docker-server=${pull.server} \
                   --docker-username=${pull.username} \
                   --docker-password='${secretVal}' \
@@ -525,7 +525,7 @@ def buildsTestHandler(scmVars) {
           stage("Scan image ${imageUrl} for vulnerabilities") {
 
             toYamlFile(klarJobTemplate, "${pwd()}/${jobName}.yaml")
-            sh("kubectl create -f ${pwd()}/${jobName}.yaml --namespace ${defaults.jenkinsNamespace}")
+            sh("kubectl apply -f ${pwd()}/${jobName}.yaml --namespace ${defaults.jenkinsNamespace}")
 
             // create klar job
             def klarPod = sh returnStdout: true, script: "kubectl get pods --selector=job-name=${jobName} --output=jsonpath={.items..metadata.name} --namespace ${defaults.jenkinsNamespace}"
@@ -1430,7 +1430,7 @@ def createCert(namespace) {
     def cert = createCertificate(tlsConf, defaultIssuerName)
     
     toYamlFile(cert, "${pwd()}/${tlsConf.name}-cert.yaml")
-    sh("kubectl create -f ${pwd()}/${tlsConf.name}-cert.yaml --namespace ${namespace} ${kubeconfigStr}")
+    sh("kubectl apply -f ${pwd()}/${tlsConf.name}-cert.yaml --namespace ${namespace} ${kubeconfigStr}")
   }
 }
 
